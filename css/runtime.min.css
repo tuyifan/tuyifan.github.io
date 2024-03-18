@@ -1,0 +1,34 @@
+
+
+#footer-wrap {
+  position: relative;
+  padding: 40px 20px;
+  color: var(--light-grey);
+  text-align: center
+}
+
+#footer-wrap a {
+  color: var(--light-grey)
+}
+
+#footer-wrap a:hover {
+  text-decoration: underline
+}
+
+#footer-wrap .footer-separator {
+  margin: 0 4px
+}
+
+#footer-wrap .icp-icon {
+  padding: 0 4px;
+  max-height: 1.4em;
+  width: auto;
+  vertical-align: text-bottom
+}
+#footer-wrap a {
+  border-radius: 30px
+}
+
+#footer-wrap {
+  padding: 20px 20px
+}
